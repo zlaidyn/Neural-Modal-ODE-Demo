@@ -167,8 +167,8 @@ def add_noise(data, noise_factor):
 if __name__ == '__main__':
  
     n_dof = 4    
-    t_max = 35.0
-    dt = 0.05
+    t_max = 50.0
+    dt = 0.1
     fs = 1/dt
     nt = int(t_max/dt) +1
     tspan = np.linspace(0., t_max , num = nt )
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     noise_factor = 0.03
     State_trajs = np.zeros((N,nt,n_dof*3))
     Obs_trajs = np.zeros((N,nt,n_dof))
-    obs_idx = [8,9,10,11] # measuring the acc
+    # obs_idx = [8,9,10,11] # measuring the acc
     
     for i in range(N):
         print("n = {}/{}".format(i,N))
@@ -186,7 +186,7 @@ if __name__ == '__main__':
         z_sol, z_sol_dot, p = generate_model_4dof(z0, tspan)                
       
         State_trajs[i,:,:] = np.concatenate([z_sol, z_sol_dot[:, n_dof:]], axis=1)
-        obs = State_trajs[i,:,obs_idx].T
+        obs = State_trajs[i,:,2*n_dof:]
         obs_noise = add_noise(obs,noise_factor)  
         Obs_trajs[i,:,:] = obs_noise
                 
@@ -215,12 +215,14 @@ if __name__ == '__main__':
                   label2 = "measured data"
                   )
             
-    Obs_trajs_fem =  np.zeros_like(Obs_trajs)
+    State_trajs_fem =  np.zeros_like(State_trajs)
     
     for i in range(N):
         z0_new = State_trajs[i,0,:2*n_dof]        
-        _, z_fem_dot =  reconstruction(z0_new, phi_sorted_noise, omega_sorted_noise, xi_fem) 
-        Obs_trajs_fem[i,:,:] = z_fem_dot[:,n_dof:]
+        z_fem, z_fem_dot =  reconstruction(z0_new, phi_sorted_noise, omega_sorted_noise, xi_fem) 
+        State_trajs_fem[i,:,:] = np.concatenate([z_fem, 
+                                             z_fem_dot[:, n_dof:]], axis=1)
+
         
     
     element = np.array([[1,2],
@@ -239,7 +241,7 @@ if __name__ == '__main__':
                 Obs_trajs = Obs_trajs, 
                 dt = dt,
                 State_trajs = State_trajs,  
-                Obs_trajs_fem = Obs_trajs_fem
+                State_trajs_fem = State_trajs_fem
                 )
 
     np.savez("./data/modal_para.npz",            

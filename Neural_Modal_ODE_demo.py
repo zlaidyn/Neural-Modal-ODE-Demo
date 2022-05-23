@@ -54,7 +54,8 @@ def loading_obs_data(data_dir):
     npzfile = np.load(data_dir)
              
     Obs_trajs = npzfile["Obs_trajs"]
-    Obs_trajs_fem = npzfile["Obs_trajs_fem"]
+    State_trajs = npzfile["State_trajs"]
+    State_trajs_fem = npzfile["State_trajs_fem"]
     
     Nt = Obs_trajs.shape[1]
 
@@ -65,7 +66,7 @@ def loading_obs_data(data_dir):
     ts = np.linspace(0., dt*Nt - dt , num = Nt)
     ts = torch.from_numpy(ts).float()
     
-    return  Obs_trajs, Obs_trajs_fem, ts
+    return  Obs_trajs, State_trajs, State_trajs_fem, ts
 
 def log_normal_pdf(x, mean, logvar):
     
@@ -330,7 +331,7 @@ if __name__ == '__main__':
                 project_name="Neural_Modal_ODE_demo",
                 workspace="gamehere-007",
                 )
-    
+    n_dof = 4
     n_modes_used = 4
     n_dim = n_modes_used
     latent_dim = n_dim * 2
@@ -358,7 +359,12 @@ if __name__ == '__main__':
     
     p, node_corr, edges = loading_modal_paras(modal_dir, n_modes_used = n_modes_used)
     
-    Obs_trajs_full, Obs_trajs_full_fem, ts = loading_obs_data(data_dir)
+    Obs_trajs_full, State_trajs_full, State_trajs_full_fem, ts = loading_obs_data(data_dir)
+
+    Dis_trajs_full = State_trajs_full[:,:,:n_dof]
+    Dis_trajs_full_fem = State_trajs_full_fem[:,:,:n_dof]
+    Obs_trajs_full_fem = State_trajs_full_fem[:,:,n_dof*2:]
+    
     
     # nodes_full = [0,1,2,3]  
     dof_indices_full = [1,2,3,4]
@@ -376,7 +382,11 @@ if __name__ == '__main__':
     
     Obs_trajs_full_train = Obs_trajs_full[:int(0.8*N),:,:]
     Obs_trajs_full_test = Obs_trajs_full[int(0.8*N):,:,:]
+    
     Obs_trajs_full_fem_test  = Obs_trajs_full_fem[int(0.8*N):,:,:]
+    Dis_trajs_full_fem_test  = Dis_trajs_full_fem[int(0.8*N):,:,:]
+    Dis_trajs_full_test  = Dis_trajs_full[int(0.8*N):,:,:]
+
         
     odefunc = NeuralModalODEfunc(p, hidden_ndof = n_dim, obs_dim = obs_dim)
     
@@ -502,6 +512,14 @@ if __name__ == '__main__':
                     plt.title("$k = " + str(i) +"$")
                 plt.tight_layout()    
                 experiment.log_figure(figure=fig_G_test, figure_name="test_dis_full{:02d}".format(epoch))                                  
+                
+                fig4= plot_resp(
+                          pred_dis_test.detach().numpy()[n_re,:,dof_indices_full].T, 
+                          Dis_trajs_full_test[n_re,:,:], 
+                          z_fem = Dis_trajs_full_fem_test[n_re,:,:], 
+                          )
+                experiment.log_figure(figure=fig4, figure_name="dis_test_full_{:02d}".format(epoch)) 
+                                
                 plt.close("all")     
                              
                 # if  epoch % 100 == 0: # generating videos
