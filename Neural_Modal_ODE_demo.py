@@ -215,12 +215,20 @@ class NeuralModalODEfunc(nn.Module):
                                     [hidden_dim, hidden_dim],
                                     z_dim)
         
+        # self.trans_net = nn.Sequential(
+        #                                 nn.Linear(z_dim, hidden_dim, bias = False),
+        #                                 nn.ReLU(),
+        #                                 nn.Linear(hidden_dim, hidden_dim, bias = False),
+        #                                 nn.ReLU(),
+        #                                 nn.Linear(hidden_dim, hidden_ndof, bias = False),                                                                                  
+        #                                 )
+        
         self.trans_net = nn.Sequential(
-                                        nn.Linear(z_dim, hidden_dim, bias = False),
+                                        nn.Linear(z_dim, hidden_dim),
                                         nn.ReLU(),
-                                        nn.Linear(hidden_dim, hidden_dim, bias = False),
+                                        nn.Linear(hidden_dim, hidden_dim),
                                         nn.ReLU(),
-                                        nn.Linear(hidden_dim, hidden_ndof, bias = False),                                                                                  
+                                        nn.Linear(hidden_dim, hidden_ndof),                                                                                  
                                         )
         
     def forward(self, t, zq):

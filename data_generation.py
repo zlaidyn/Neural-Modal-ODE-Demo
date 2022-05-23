@@ -167,7 +167,7 @@ def add_noise(data, noise_factor):
 if __name__ == '__main__':
  
     n_dof = 4    
-    t_max = 50.0
+    t_max = 60.0
     dt = 0.1
     fs = 1/dt
     nt = int(t_max/dt) +1
