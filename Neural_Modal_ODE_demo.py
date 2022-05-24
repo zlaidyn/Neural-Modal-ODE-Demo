@@ -348,7 +348,7 @@ if __name__ == '__main__':
     batch_size = 16
     num_epochs = 1000
     lr = 1e-3
-    encoder_type = "RNN_MLP" # "RNN_MLP"
+    encoder_type = "RNN_MLP" #  two types： "RNN" and "RNN_MLP"
     
     print("encoder_tyep = " + encoder_type)
     
