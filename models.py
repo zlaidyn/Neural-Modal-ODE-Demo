@@ -1,37 +1,25 @@
 import torch
 import torch.nn as nn
-# from torch.autograd.functional import jacobian, hessian
 
+class MLP(nn.Module):
+    def __init__(self, input_dim, hid_dims, out_dim):
+        super(MLP, self).__init__()
 
-class Recognition_q(nn.Module):
-
-    def __init__(self, latent_dim = 6, obs_dim = 3, nhidden=32):
-        super(Recognition_q, self).__init__()
-        
-        self.o2h = nn.Linear(obs_dim//2, nhidden)
-        self.h2q = nn.Linear(nhidden, latent_dim)
-
-    def forward(self, x):
-        
-        h = torch.tanh(self.o2h(x))
-        out = self.h2q(h)
-        return out  
-    
-class Recognition_q_logvar(nn.Module):
-
-    def __init__(self, latent_dim = 6, obs_dim = 3, nhidden=32):
-        super(Recognition_q_logvar, self).__init__()
-        
-        n_dim = latent_dim // 2
-        
-        self.o2h = nn.Linear(obs_dim, nhidden)
-        self.h2q = nn.Linear(nhidden, n_dim)
+        self.mlp = nn.Sequential()
+        dims = [input_dim] + hid_dims + [out_dim]
+        for i in range(len(dims)-1):
+            self.mlp.add_module('lay_{}'.format(i),nn.Linear(in_features=dims[i], out_features=dims[i+1]))
+            if i+2 < len(dims):
+                self.mlp.add_module('act_{}'.format(i), nn.ReLU())
+    def reset_parameters(self):
+        for i, l in enumerate(self.mlp):
+            if type(l) == nn.Linear:
+                nn.init.xavier_normal_(l.weight)
 
     def forward(self, x):
-        
-        h = torch.tanh(self.o2h(x))
-        out = self.h2q(h)
-        return out     
+        return self.mlp(x)    
+
+ 
     
 
 class RecognitionRNN(nn.Module):

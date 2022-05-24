@@ -8,29 +8,10 @@ from datetime import datetime
 from pathlib import Path
 import os
 from torchdiffeq import odeint
-from models import RecognitionRNN
+from models import RecognitionRNN, MLP
 from torch.distributions.multivariate_normal import MultivariateNormal
 from tqdm import tqdm
-import networkx as nx
-
-class MLP(nn.Module):
-    def __init__(self, input_dim, hid_dims, out_dim):
-        super(MLP, self).__init__()
-
-        self.mlp = nn.Sequential()
-        dims = [input_dim] + hid_dims + [out_dim]
-        for i in range(len(dims)-1):
-            self.mlp.add_module('lay_{}'.format(i),nn.Linear(in_features=dims[i], out_features=dims[i+1]))
-            if i+2 < len(dims):
-                self.mlp.add_module('act_{}'.format(i), nn.ReLU())
-    def reset_parameters(self):
-        for i, l in enumerate(self.mlp):
-            if type(l) == nn.Linear:
-                nn.init.xavier_normal_(l.weight)
-
-    def forward(self, x):
-        return self.mlp(x)       
-        
+    
 def loading_modal_paras(modal_dir, n_modes_used = 4):
     
     npzfile = np.load(modal_dir)
@@ -88,7 +69,6 @@ def plot_resp(z_1, z_2, obs_idx, z_fem = None,
               label3 = "unmeasured data",
               label_fem = "FEM",
               col_num = 4):
-    # font = font_manager.FontProperties(family="Helvetica")
     plt.ioff()
     n_fig = z_1.shape[-1]
     Y_label1 = [r"$x_{"+str(i+1)+"}$" for i in range (n_fig//3)]
@@ -140,39 +120,6 @@ def plot_latent(z_1,
     # plt.xlabel("$k$") 
     plt.tight_layout()
     return fig
-
-def plot_graph(edges, node_corr, node_dis, a = 1.0, node_color = "k", edge_color = "k",label = "",):
-
-    G1 = nx.Graph()
-    G1.add_edges_from(edges)
-    
-    G2 = nx.Graph()
-    G2.add_edges_from(edges)
-    node_positions = {node: (node_corr[node-1,1],
-                            node_corr[node-1,2] ) 
-                      for node in G1.nodes}
-    
-    node_positions_new = {node: (node_corr[node-1,1] + a*node_dis[node-1],
-                            node_corr[node-1,2]) 
-                      for node in G2.nodes}
-       
-    nx.draw(G1,
-                     pos = node_positions,
-                     node_size = 30,
-                     with_labels = False,
-                     node_color = "grey",
-                     edge_color = "grey",
-                     ) 
-    nx.draw(G2,
-                     pos = node_positions_new,
-                     node_size = 30,
-                     with_labels = False,
-                     node_color = node_color,
-                     edge_color = edge_color,
-                     label = label
-                     ) 
-    plt.draw() 
-    return None
  
 class NeuralModalODEfunc(nn.Module):
 
@@ -216,14 +163,6 @@ class NeuralModalODEfunc(nn.Module):
         self.Phi_net_encoder = MLP(obs_dim,
                                     [hidden_dim, hidden_dim],
                                     z_dim)
-        
-        # self.trans_net = nn.Sequential(
-        #                                 nn.Linear(z_dim, hidden_dim, bias = False),
-        #                                 nn.ReLU(),
-        #                                 nn.Linear(hidden_dim, hidden_dim, bias = False),
-        #                                 nn.ReLU(),
-        #                                 nn.Linear(hidden_dim, hidden_ndof, bias = False),                                                                                  
-        #                                 )
         
         self.trans_net = nn.Sequential(
                                         nn.Linear(z_dim, hidden_dim),
@@ -339,7 +278,7 @@ if __name__ == '__main__':
                 project_name="Neural_Modal_ODE_demo",
                 workspace="gamehere-007",
                 )
-    n_dof = 4
+    
     n_modes_used = 4
     n_dim = n_modes_used
     latent_dim = n_dim * 2
@@ -450,16 +389,7 @@ if __name__ == '__main__':
                 save_checkpoint(odefunc, rec, optimizer, epoch, loss, save_path)
                 print('Iter: {}, loss_train: {:.4f}'.format(epoch, batch_loss)) 
                 n_re = 0
-                #-----------plotting train -----------------#              
-                # fig_G = plt.figure()
-                # for i in range(5):
-                #     plt.subplot(1,5,i+1)
-                #     pred_dis_reshape = pred_dis[n_re,i,:]                               
-                #     plot_graph(edges, node_corr, pred_dis_reshape.detach().numpy())
-                #     plt.title("$k = " + str(i) +"$")
-                # plt.tight_layout()    
-                # experiment.log_figure(figure=fig_G, figure_name="train_dis_full{:02d}".format(epoch)) 
-               
+                #-----------plotting train -----------------#                             
                 fig0 = plot_resp(
                           pred_state.detach().numpy()[n_re,:,:], 
                           state_full.detach().numpy()[n_re,:,:], 
@@ -498,56 +428,6 @@ if __name__ == '__main__':
                           pred_zq_sol_test.detach().numpy()[n_re,:,:]
                           )
                 experiment.log_figure(figure=fig3, figure_name="test_latent_{:02d}".format(epoch)) 
-                             
-                # fig_G_test = plt.figure()
-                # for i in range(5):
-                #     plt.subplot(1,5,i+1)
-                #     pred_dis_test_reshape = pred_dis_test[n_re,i,:]                               
-                #     plot_graph(edges, node_corr, pred_dis_test_reshape.detach().numpy())
-                #     plt.title("$k = " + str(i) +"$")
-                # plt.tight_layout()    
-                # experiment.log_figure(figure=fig_G_test, figure_name="test_dis_full{:02d}".format(epoch))                                  
+                                                           
                 plt.close("all")     
                              
-                # if  epoch % 100 == 0: # generating videos
-                #     print("saving figures ...")
-                #     for i in range(Nt):
-                #         pred_dis_test_reshape = pred_dis_test.reshape((pred_dis_test.shape[0],Nt,-1,3))[n_re,i,:,:]                               
-                #         fig = plt.figure(figsize=(15,3))
-                #         plot_graph(edges, node_corr, pred_dis_test_reshape.detach().numpy())
-                #         plt.savefig("./saved_fig/"+str(i)+".jpg")             
-                #         plt.close("all") 
-                        
-                # temp = pred_dis_test.reshape((pred_dis_test.shape[0],Nt,-1,3))[n_re,:,:,:]                               
-                # temp2 = temp.detach().numpy()[:,39,0]
-                # plt.figure(figsize=(8,2))
-                # plt.plot(300*temp2, label = "Node 40")
-                # plt.ylabel("reconstructed displacement")
-                # plt.xlabel("$k$")
-                # plt.legend(loc = 1)
-                # plt.show()
-                        
-                # u_fem = sio.loadmat("./data/deformation_FEM.mat")["u"]  
-                # u0_fem = u_fem[:,0].reshape(55,3)
-                
-                # u0_hybrid = pred_dis_test.reshape((pred_dis_test.shape[0],Nt,-1,3))[n_re,0,:,:].detach().numpy()  
-                
-                # ratio = u0_hybrid[19,1] / u0_fem[19,1]
-                
-                # fig = plt.figure(figsize=(15,3))                             
-                # plot_graph(edges, node_corr, u0_hybrid, 
-                #            node_color = "k", edge_color = "k",
-                #            label = "hybrid model")
-                # plot_graph(edges, node_corr, u0_fem*ratio, 
-                #            node_color = "indianred", edge_color = "indianred",
-                #            label = "FEM")
-                # plt.legend()
-                # plt.show()
-                
-                
-                
-                
-                
-                
-                        
-                        
