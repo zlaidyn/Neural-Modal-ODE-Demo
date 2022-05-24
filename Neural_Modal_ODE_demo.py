@@ -130,7 +130,7 @@ def plot_latent(z_1,
     Y_labels2 = ["$\dot{q}_{"+str(i+1)+"}$" for i in range (n_fig//2)]
     Y_labels = Y_labels1 + Y_labels2
    
-    fig = plt.figure(figsize = (12,6) )   
+    fig = plt.figure(figsize = (14,6) )   
     for i in range(n_fig):
         plt.subplot( (n_fig+1)//col_num, (n_fig+1) // ((n_fig+1) // col_num), i+1)           
         plt.plot(z_1[:,i], '-k',label = label1)     
@@ -367,9 +367,7 @@ if __name__ == '__main__':
         
     modal_dir =   "./data/modal_para.npz"
     data_dir =   "./data/measured_data.npz" 
-    
-    
-    
+      
     p, node_corr, edges = loading_modal_paras(modal_dir, n_modes_used = n_modes_used)
     
     Obs_trajs, State_trajs, State_trajs_fem, ts = loading_obs_data(data_dir, obs_idx)
@@ -447,7 +445,7 @@ if __name__ == '__main__':
                 batch_loss = loss / batch_size
                 experiment.log_metric("training_loss", batch_loss, step=global_step)                    
 
-            if  epoch % 20 == 0 :
+            if  epoch % 10 == 0 :
                 
                 save_checkpoint(odefunc, rec, optimizer, epoch, loss, save_path)
                 print('Iter: {}, loss_train: {:.4f}'.format(epoch, batch_loss)) 

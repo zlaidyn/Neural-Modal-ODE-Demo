@@ -173,7 +173,7 @@ if __name__ == '__main__':
     nt = int(t_max/dt) +1
     tspan = np.linspace(0., t_max , num = nt )
     
-    N = 300 # number of realizations
+    N = 1000 # number of realizations
     noise_factor = 0.03
     State_trajs = np.zeros((N,nt,n_dof*3))
     Obs_trajs = np.zeros((N,nt,n_dof))
