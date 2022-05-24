@@ -36,7 +36,7 @@ def loading_modal_paras(modal_dir, n_modes_used = 4):
     npzfile = np.load(modal_dir)
         
     omega = npzfile["omega"][:n_modes_used]  
-    phi =  npzfile["phi_aug"][:,:n_modes_used]  
+    phi =  npzfile["phi"][:,:n_modes_used]  
     xi = npzfile["xi"][:n_modes_used]  
     node_corr =  npzfile["node"]
     edges = npzfile["element"]   
@@ -49,20 +49,18 @@ def loading_modal_paras(modal_dir, n_modes_used = 4):
     
     return  p, node_corr, edges            
 
-def loading_obs_data(data_dir):
+def loading_obs_data(data_dir, obs_idx):
     
-    npzfile = np.load(data_dir)
-             
-    Obs_trajs = npzfile["Obs_trajs"]
+    npzfile = np.load(data_dir)            
     State_trajs = npzfile["State_trajs"]
     State_trajs_fem = npzfile["State_trajs_fem"]
+    dt = npzfile["dt"]
+    
+    State_trajs = torch.from_numpy(State_trajs).float()    
+    Obs_trajs = State_trajs[:,:, obs_idx]
     
     Nt = Obs_trajs.shape[1]
-
-    dt = npzfile["dt"]
-            
-    Obs_trajs = torch.from_numpy(Obs_trajs).float()  
-        
+                    
     ts = np.linspace(0., dt*Nt - dt , num = Nt)
     ts = torch.from_numpy(ts).float()
     
@@ -84,22 +82,26 @@ def normal_kl(mu1, lv1, mu2, lv2):
     kl = lstd2 - lstd1 + ((v1 + (mu1 - mu2) ** 2.) / (2. * v2)) - .5
     return kl
 
-def plot_resp(z_1, z_2, z_fem = None,
+def plot_resp(z_1, z_2, obs_idx, z_fem = None,
               label1 = "hybrid model", 
               label2 = "measured data",
               label3 = "unmeasured data",
               label_fem = "FEM",
-              col_num = 2):
+              col_num = 4):
     # font = font_manager.FontProperties(family="Helvetica")
     plt.ioff()
     n_fig = z_1.shape[-1]
-    Y_labels = ["A$_{"+str(i+1)+"}$" for i in range (n_fig)]
-     
-    fig = plt.figure(figsize = (12,6) )   
+    Y_label1 = [r"$x_{"+str(i+1)+"}$" for i in range (n_fig//3)]
+    Y_label2 = [r"$\dot{x}_{"+str(i+1)+"}$" for i in range (n_fig//3)]
+    Y_label3 = [r"$\ddot{x}_{"+str(i+1)+"}$" for i in range (n_fig//3)]
+    
+    Y_labels = Y_label1 + Y_label2 + Y_label3
+    
+    fig = plt.figure(figsize = (14,6) )   
     for i in range(n_fig):
         plt.subplot( (n_fig+1)//col_num, (n_fig+1) // ((n_fig+1) // col_num), i+1) 
 
-        if i != 1:
+        if i in obs_idx:
             plt.plot(z_2[:,i], '-', color = "silver", label = label2, lw = 2.5)
         else:
             plt.plot(z_2[:,i], "--", color = 'silver',label = label3, lw = 2.5)   
@@ -110,7 +112,7 @@ def plot_resp(z_1, z_2, z_fem = None,
         
         plt.ylabel(Y_labels[i])
         
-        if i == 0 or i == 1:
+        if i == obs_idx[0] or i == 0:
             plt.legend(loc = 1, ncol=3)
     plt.xlabel("$k$")
     plt.tight_layout()
@@ -236,7 +238,6 @@ class NeuralModalODEfunc(nn.Module):
         qd = zq[...,self.n:]                       
         out1 = qd       
         out2 = self.trans_A(zq) + self.trans_net(zq)       
-        # out2 = self.trans_A(zq) 
 
         zq_dot = torch.cat([out1,out2], axis = -1)
         
@@ -280,22 +281,21 @@ def sampling_zq0_RNN(odefunc_model, rec_model,data_train):
     return zq0, zq0_mean, zq0_logvar
 
 def compute_loss(odefunc_model, zq0, ts, data_train, 
-                 dof_indices, dof_indices_full,
-                 obs_noise_std = 0.002
-                 ):
+                 obs_idx, obs_noise_std = 0.002):
     
     pred_zq_sol = odeint(odefunc_model,
                          zq0,ts, 
                           method = "rk4" 
                          ).permute(1, 0, 2)
       
-    pred_acc_sol = odefunc_model.trans_A(pred_zq_sol) + odefunc_model.trans_net(pred_zq_sol)  
-          
+    pred_acc_sol = odefunc_model.trans_A(pred_zq_sol) + odefunc_model.trans_net(pred_zq_sol) 
+            
     pred_dis =  odefunc_model.Phi_decoder(pred_zq_sol[...,:odefunc_model.n]) 
-        
-    pred_x_total = odefunc_model.Phi_decoder(pred_acc_sol) 
-    pred_x = pred_x_total[..., dof_indices]
-    pred_x_full = pred_x_total[..., dof_indices_full]
+    pred_vel = odefunc_model.Phi_decoder(pred_zq_sol[...,odefunc_model.n:])        
+    pred_acc = odefunc_model.Phi_decoder(pred_acc_sol) 
+    
+    pred_state = torch.cat([pred_dis, pred_vel, pred_acc], dim = -1) 
+    pred_x = pred_state[...,obs_idx]
     
     noise_std_ = torch.zeros(pred_x.size()) + obs_noise_std
     noise_logvar = 2. * torch.log(noise_std_)
@@ -310,7 +310,7 @@ def compute_loss(odefunc_model, zq0, ts, data_train,
 
     experiment.log_metric("loss", loss, step=global_step)
     
-    return loss, pred_x_full, pred_x, pred_zq_sol, pred_dis  
+    return loss, pred_x, pred_state, pred_zq_sol 
 
 def save_checkpoint(odefunc, rec, optimizer, epoch, loss, save_path):
     torch.save({
@@ -352,11 +352,14 @@ if __name__ == '__main__':
     
     print("encoder_tyep = " + encoder_type)
     
+    obs_idx = [3,8,10,11] # dis - 0,1,2,3; vel - 4,5,6,7; acc - 8,9,10,11 
+    
     hyper_params = {
         "batch_size": batch_size,
         "num_epochs": num_epochs,
         "rnn_len": rnn_len,
         "lr": lr,
+        "obs_idx": obs_idx, 
         "encoder_type": encoder_type
     }  
      
@@ -365,36 +368,22 @@ if __name__ == '__main__':
     modal_dir =   "./data/modal_para.npz"
     data_dir =   "./data/measured_data.npz" 
     
+    
+    
     p, node_corr, edges = loading_modal_paras(modal_dir, n_modes_used = n_modes_used)
     
-    Obs_trajs_full, State_trajs_full, State_trajs_full_fem, ts = loading_obs_data(data_dir)
+    Obs_trajs, State_trajs, State_trajs_fem, ts = loading_obs_data(data_dir, obs_idx)
 
-    Dis_trajs_full = State_trajs_full[:,:,:n_dof]
-    Dis_trajs_full_fem = State_trajs_full_fem[:,:,:n_dof]
-    Obs_trajs_full_fem = State_trajs_full_fem[:,:,n_dof*2:]
+    N, Nt, obs_dim = Obs_trajs.shape
     
-    
-    # nodes_full = [0,1,2,3]  
-    dof_indices_full = [1,2,3,4]
-    
-    nodes_for_train = [0,2,3] 
-    dof_indices = [1,3,4] # 2 is left out for valiation
-    
-
-    Obs_trajs = Obs_trajs_full[:,:,nodes_for_train]  
-    N, Nt = Obs_trajs.shape[0], Obs_trajs.shape[1]
-                  
-    obs_dim =  Obs_trajs.shape[-1]
     Obs_trajs_train = Obs_trajs[:int(0.8*N),:,:]
     Obs_trajs_test = Obs_trajs[int(0.8*N):,:,:]
     
-    Obs_trajs_full_train = Obs_trajs_full[:int(0.8*N),:,:]
-    Obs_trajs_full_test = Obs_trajs_full[int(0.8*N):,:,:]
+    State_trajs_train = State_trajs[:int(0.8*N),:,:]
+    State_trajs_test = State_trajs[int(0.8*N):,:,:]
     
-    Obs_trajs_full_fem_test  = Obs_trajs_full_fem[int(0.8*N):,:,:]
-    Dis_trajs_full_fem_test  = Dis_trajs_full_fem[int(0.8*N):,:,:]
-    Dis_trajs_full_test  = Dis_trajs_full[int(0.8*N):,:,:]
-
+    State_trajs_fem_train = State_trajs_fem[:int(0.8*N),:,:]
+    State_trajs_fem_test = State_trajs_fem[int(0.8*N):,:,:]   
         
     odefunc = NeuralModalODEfunc(p, hidden_ndof = n_dim, obs_dim = obs_dim)
     
@@ -430,7 +419,7 @@ if __name__ == '__main__':
     epoch_loss = 0
     
     train_set = torch.utils.data.TensorDataset(Obs_trajs_train, 
-                                               Obs_trajs_full_train,
+                                               State_trajs_train,
                                                )    
     
     train_loader = torch.utils.data.DataLoader(train_set,
@@ -447,10 +436,9 @@ if __name__ == '__main__':
                 # estimate zq0
                 zq0, zq0_mean, zq0_logvar = sampling_zq0(odefunc,rec,data_train)
                 
-                loss, pred_x_full, pred_x, pred_zq_sol, pred_dis   = compute_loss(
+                loss, pred_x, pred_state, pred_zq_sol  = compute_loss(
                                                         odefunc, zq0, ts, data_train, 
-                                                        dof_indices, dof_indices_full,
-                                                         obs_noise_std = obs_noise_std)
+                                                        obs_idx, obs_noise_std = obs_noise_std)
                 
                 loss.backward()
                 optimizer.step()       
@@ -465,18 +453,19 @@ if __name__ == '__main__':
                 print('Iter: {}, loss_train: {:.4f}'.format(epoch, batch_loss)) 
                 n_re = 0
                 #-----------plotting train -----------------#              
-                fig_G = plt.figure()
-                for i in range(5):
-                    plt.subplot(1,5,i+1)
-                    pred_dis_reshape = pred_dis[n_re,i,:]                               
-                    plot_graph(edges, node_corr, pred_dis_reshape.detach().numpy())
-                    plt.title("$k = " + str(i) +"$")
-                plt.tight_layout()    
-                experiment.log_figure(figure=fig_G, figure_name="train_dis_full{:02d}".format(epoch)) 
+                # fig_G = plt.figure()
+                # for i in range(5):
+                #     plt.subplot(1,5,i+1)
+                #     pred_dis_reshape = pred_dis[n_re,i,:]                               
+                #     plot_graph(edges, node_corr, pred_dis_reshape.detach().numpy())
+                #     plt.title("$k = " + str(i) +"$")
+                # plt.tight_layout()    
+                # experiment.log_figure(figure=fig_G, figure_name="train_dis_full{:02d}".format(epoch)) 
                
                 fig0 = plot_resp(
-                          pred_x_full.detach().numpy()[n_re,:,:], 
-                          data_full.detach().numpy()[n_re,:,:],          
+                          pred_state.detach().numpy()[n_re,:,:], 
+                          State_trajs_train.detach().numpy()[n_re,:,:], 
+                          obs_idx
                           )
                 experiment.log_figure(figure=fig0, figure_name="train_full_{:02d}".format(epoch)) 
                 
@@ -492,19 +481,19 @@ if __name__ == '__main__':
                 
                 zq0, zq0_mean, zq0_logvar = sampling_zq0(odefunc,rec,Obs_trajs_sample)
                 
-                loss_test, pred_x_full_test, pred_x_test, pred_zq_sol_test, pred_dis_test = compute_loss(
+                loss_test, pred_x_test, pred_state_test, pred_zq_sol_test = compute_loss(
                                     odefunc, zq0, ts, Obs_trajs_sample, 
-                                    dof_indices, dof_indices_full,
-                                    obs_noise_std = obs_noise_std) 
+                                    obs_idx, obs_noise_std = obs_noise_std) 
                 
                 print('Iter: {}, loss_test: {:.4f}'.format(epoch, loss_test/n_sample)) 
                 experiment.log_metric("test_loss", loss_test/n_sample, step = global_step)   
 
                 fig2= plot_resp(
-                           pred_x_full_test.detach().numpy()[n_re,:,:], 
-                          Obs_trajs_full_test.detach().numpy()[n_re,:,:], 
-                          z_fem = Obs_trajs_full_fem_test[n_re,:,:], 
-                          )
+                               pred_state_test.detach().numpy()[n_re,:,:], 
+                               State_trajs_test.detach().numpy()[n_re,:,:], 
+                               obs_idx,
+                               z_fem = State_trajs_fem_test[n_re,:,:], 
+                              )
                 experiment.log_figure(figure=fig2, figure_name="test_full_{:02d}".format(epoch)) 
                                 
                 fig3 = plot_latent(
@@ -512,22 +501,14 @@ if __name__ == '__main__':
                           )
                 experiment.log_figure(figure=fig3, figure_name="test_latent_{:02d}".format(epoch)) 
                              
-                fig_G_test = plt.figure()
-                for i in range(5):
-                    plt.subplot(1,5,i+1)
-                    pred_dis_test_reshape = pred_dis_test[n_re,i,:]                               
-                    plot_graph(edges, node_corr, pred_dis_test_reshape.detach().numpy())
-                    plt.title("$k = " + str(i) +"$")
-                plt.tight_layout()    
-                experiment.log_figure(figure=fig_G_test, figure_name="test_dis_full{:02d}".format(epoch))                                  
-                
-                fig4= plot_resp(
-                          pred_dis_test.detach().numpy()[n_re,:,dof_indices_full].T, 
-                          Dis_trajs_full_test[n_re,:,:], 
-                          z_fem = Dis_trajs_full_fem_test[n_re,:,:], 
-                          )
-                experiment.log_figure(figure=fig4, figure_name="dis_test_full_{:02d}".format(epoch)) 
-                                
+                # fig_G_test = plt.figure()
+                # for i in range(5):
+                #     plt.subplot(1,5,i+1)
+                #     pred_dis_test_reshape = pred_dis_test[n_re,i,:]                               
+                #     plot_graph(edges, node_corr, pred_dis_test_reshape.detach().numpy())
+                #     plt.title("$k = " + str(i) +"$")
+                # plt.tight_layout()    
+                # experiment.log_figure(figure=fig_G_test, figure_name="test_dis_full{:02d}".format(epoch))                                  
                 plt.close("all")     
                              
                 # if  epoch % 100 == 0: # generating videos

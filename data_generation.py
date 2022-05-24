@@ -167,7 +167,7 @@ def add_noise(data, noise_factor):
 if __name__ == '__main__':
  
     n_dof = 4    
-    t_max = 60.0
+    t_max = 50.0
     dt = 0.1
     fs = 1/dt
     nt = int(t_max/dt) +1
@@ -184,11 +184,9 @@ if __name__ == '__main__':
         
         z0 = np.random.randn(n_dof*2,)
         z_sol, z_sol_dot, p = generate_model_4dof(z0, tspan)                
-      
-        State_trajs[i,:,:] = np.concatenate([z_sol, z_sol_dot[:, n_dof:]], axis=1)
-        obs = State_trajs[i,:,2*n_dof:]
-        obs_noise = add_noise(obs,noise_factor)  
-        Obs_trajs[i,:,:] = obs_noise
+        z_sol_noise =  add_noise(z_sol,noise_factor)
+        z_sol_dot_noise =  add_noise(z_sol_dot,noise_factor)
+        State_trajs[i,:,:] = np.concatenate([z_sol_noise, z_sol_dot_noise[:, n_dof:]], axis=1)
                 
     phi_sorted, omega_sorted, xi_sorted = compute_eig(p)
     phi_sorted_noise =  add_noise(phi_sorted,0.03)
@@ -238,13 +236,13 @@ if __name__ == '__main__':
                     ])
        
     np.savez("./data/measured_data.npz",            
-                Obs_trajs = Obs_trajs, 
                 dt = dt,
                 State_trajs = State_trajs,  
                 State_trajs_fem = State_trajs_fem
                 )
 
-    np.savez("./data/modal_para.npz",            
+    np.savez("./data/modal_para.npz", 
+                phi = phi_sorted_noise,
                 phi_aug = phi_aug, 
                 omega = omega_sorted_noise,
                 xi = xi_fem,
