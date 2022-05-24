@@ -407,7 +407,7 @@ if __name__ == '__main__':
     save_path = os.path.join(train_model_dir, dt_string)
     Path(save_path).mkdir(parents=True, exist_ok=True)  
     
-    load_model = "24-05-2022_13-06-05"
+    load_model = ""
 
     if  load_model != "":       
         load_path =  os.path.join(train_model_dir, load_model,'checkpoint.pth')
