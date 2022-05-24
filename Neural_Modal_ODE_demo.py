@@ -348,7 +348,7 @@ if __name__ == '__main__':
     batch_size = 16
     num_epochs = 10000
     lr = 1e-3
-    encoder_type = "RNN_MLP" # "RNN_MLP"
+    encoder_type = "RNN" # "RNN_MLP"
     
     print("encoder_tyep = " + encoder_type)
     
@@ -407,7 +407,7 @@ if __name__ == '__main__':
     save_path = os.path.join(train_model_dir, dt_string)
     Path(save_path).mkdir(parents=True, exist_ok=True)  
     
-    load_model = ""
+    load_model = "24-05-2022_13-06-05"
 
     if  load_model != "":       
         load_path =  os.path.join(train_model_dir, load_model,'checkpoint.pth')
@@ -426,7 +426,7 @@ if __name__ == '__main__':
         
     with experiment.train():  
         for epoch in range(num_epochs):
-            for _, (data_train, data_full) in enumerate(tqdm(train_loader)):
+            for _, (data_train, state_full) in enumerate(tqdm(train_loader)):
             
                 global_step += 1            
                 optimizer.zero_grad()
@@ -462,7 +462,7 @@ if __name__ == '__main__':
                
                 fig0 = plot_resp(
                           pred_state.detach().numpy()[n_re,:,:], 
-                          State_trajs_train.detach().numpy()[n_re,:,:], 
+                          state_full.detach().numpy()[n_re,:,:], 
                           obs_idx
                           )
                 experiment.log_figure(figure=fig0, figure_name="train_full_{:02d}".format(epoch)) 
