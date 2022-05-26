@@ -8,8 +8,13 @@ In the scope of physics-informed machine learning, this paper proposes a framewo
 ## Framework
 ![framework](framework.png)
 
+We summarize the proposed architecture in the above flowchart, which concatenates an encoder $\Psi_{\text{NN}}$ and a decoder $\Phi_p$, with  Physics-informed Neural ODEs (Pi-Neural ODEs).
+The role of the encoder is to perform inference from observational data of a handful of DOFs to the initial conditions of latent variables $\textbf{z}_0$.
+The evolution of the dynamics initiating from $\textbf{z}_0$ is learned and modeled by means of Physics-informed Neural ODEs, where the physics-informed term adopts a modal representation derived from the physics-based model. 
+The prediction of $\textbf{z}_0, \textbf{z}_1, ... ,\textbf{z}_t, ... ,  \textbf{z}_T$ at time step $t_0, t_1, ... ,t, ... ,  t_T$,  obtained from the previous step is mapped back to the original observations space via the decoder $\textbf{x}_t = \Phi_p(\textbf{z}_t)$  $(t = 0,1,...,T)$. This is then compared against the actually obtained measurements to minimize the prediction error, which effectuates the training of the proposed model. In what follows, we offer the details of the formulation of the three outlined components (encoder, Pi-Neural ODEs, and decoder) to the suggested framework.
+
 ## Results
-![prediction](https://s3.amazonaws.com/comet.ml/image_2d0c77c6b6bd4074bb9cc9cc1d2e4d2f-zIJaeUdWdM8SHeZ4f1O4Q1mBd.svg)
+![prediction](https://s3.amazonaws.com/comet.ml/image_6de8c0b6a5064fd3a863bb24a99c4960-QznS3qPanqWxer6BHVsrxE9Zc.svg)
 
 The corresponding predictions of displacements, velocities and accelerations are shown in the above figure, denoted by the blue lines. This prediction is compared with the actual measurements in grey color and predictions by the FEM models in red color. One can see that the FEM model offers satisfactory results, while some channel predictions are out of phase and fail to accurately follow the actual measurement, most possibly due to the inaccurate modeling of damping. The prediction from the proposed hybrid model is evidently more accurate than the FEM model, almost aligning with the actual measurements.
 
