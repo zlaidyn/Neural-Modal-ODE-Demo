@@ -16,26 +16,10 @@ def build_MKC(p):
                   [0, 0, -k4, k4 ],
                   ])
     return M, K, C    
-
-def model_4dof_linear(z, t, p):
+    
+def model_4dof(z, t, p, kn):
     
     M,K,C = build_MKC(p)
-    
-    A = np.concatenate(
-        [
-            np.concatenate([np.zeros([n_dof, n_dof]), np.eye(n_dof)], axis=1),  # link velocities
-            np.concatenate([-np.linalg.solve(M, K), -np.linalg.solve(M, C)], axis=1),  # movement equations
-        ], axis=0)
-    
-    dz = A @ z
-    return dz       
-
-    
-def model_4dof_nonlinear(z, t, p):
-    
-    M,K,C = build_MKC(p)
-    
-    kn = 0.2
     
     A = np.concatenate(
         [
@@ -51,8 +35,7 @@ def model_4dof_nonlinear(z, t, p):
         ],
         axis = 0
         )
-    
-    
+       
     dz = A @ z + N1
     return dz  
 
@@ -62,25 +45,20 @@ def generate_model_4dof(
                         m1 = 1.0, m2 = 2.0, m3 = 3.0, m4 = 4.0,
                         k1 = 1.0, k2 = 2.0, k3 = 3.0, k4 = 4.0,
                         c1 = 0.1, c2 = 0.1, c3 = 0.1, c4 = 0.1,
-                        mode = "linear"
+                        kn = 0.0,
                         ): 
     
     # run simulation
     nt = len(tspan)      
     p = [m1, m2, m3, m4, k1, k2, k3, k4, c1, c2, c3, c4]
-    
-    if mode == "linear":
-        model_4dof = model_4dof_linear
-    elif mode == "nonlinear":
-        model_4dof = model_4dof_nonlinear
-    
-    z_sol = odeint_0(model_4dof, z0, tspan, args=(p,),
+        
+    z_sol = odeint_0(model_4dof, z0, tspan, args=(p,kn),
                       # atol=abserr, rtol=relerr
                       )
     
     z_sol_dot = np.zeros_like(z_sol)
     for i in range(nt):
-        z_sol_dot[i,:] = model_4dof(z_sol[i,:],0,p)
+        z_sol_dot[i,:] = model_4dof(z_sol[i,:],0,p, kn)
                         
     return z_sol, z_sol_dot, p
 
@@ -191,6 +169,21 @@ def plot_comp(z_1, z_2, label1 = "", label2 = ""):
     plt.tight_layout()
     return None
 
+def plot_f_d_loop(State_trajs, p):
+    m1, m2, m3, m4, k1, k2, k3, k4, c1,c2, c3, c4 = p
+    
+    plt.figure()
+    
+    for i in range(N):
+        dis1 = State_trajs[i,:,0]
+        
+        acc1 = State_trajs[i,:,8]
+        acc2 = State_trajs[i,:,9]
+        acc3 = State_trajs[i,:,10]
+        acc4 = State_trajs[i,:,11]
+ 
+        plt.plot(-dis1, m1*acc1 + m2*acc2+m3*acc3+m4*acc4)
+    
 def add_noise(data, noise_factor):
     
     noise = np.std(data) * noise_factor
@@ -199,7 +192,7 @@ def add_noise(data, noise_factor):
 
 if __name__ == '__main__':
     
-    mode = "nonlinear" # linear and nonlinear
+    kn = 1.0
  
     n_dof = 4    
     t_max = 50.0
@@ -213,13 +206,14 @@ if __name__ == '__main__':
     model_noise_factor = 0.03
     State_trajs = np.zeros((N,nt,n_dof*3))
     Obs_trajs = np.zeros((N,nt,n_dof))
-    # obs_idx = [8,9,10,11] # measuring the acc
+    
+    np.random.seed(0)   
+    Z0 = np.random.randn(n_dof*2,N)
     
     for i in range(N):
-        print("n = {}/{}".format(i,N))
-        
-        z0 = np.random.randn(n_dof*2,)
-        z_sol, z_sol_dot, p = generate_model_4dof(z0, tspan, mode = mode)                
+        print("n = {}/{}".format(i,N))       
+        z0 = Z0[:,i]
+        z_sol, z_sol_dot, p = generate_model_4dof(z0, tspan, kn = kn)                
         z_sol_noise =  add_noise(z_sol,obs_noise_factor)
         z_sol_dot_noise =  add_noise(z_sol_dot,obs_noise_factor)
         State_trajs[i,:,:] = np.concatenate([z_sol_noise, z_sol_dot_noise[:, n_dof:]], axis=1)
@@ -261,14 +255,17 @@ if __name__ == '__main__':
                         [3,4],
                         [4,5]
                         ])
+    
     node = np.array([[1,0,0],
                     [2,0,1],
                     [3,0,2],                   
                     [4,0,3],
                     [5,0,4.0],                 
                     ])
-       
-    np.savez("./data/measured_data"+"_"+ mode +".npz",            
+    
+    plot_f_d_loop(State_trajs, p)
+        
+    np.savez("./data/measured_data_kn"+"_"+ str(kn) +".npz",            
                 dt = dt,
                 State_trajs = State_trajs,  
                 State_trajs_fem = State_trajs_fem
