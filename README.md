@@ -14,7 +14,7 @@ The evolution of the dynamics initiating from $\textbf{z}_0$ is learned and mode
 The prediction of $\textbf{z}_0, \textbf{z}_1, ... ,\textbf{z}_t, ... ,  \textbf{z}_T$ at time step $t_0, t_1, ... ,t, ... ,  t_T$,  obtained from the previous step is mapped back to the original observations space via the decoder $\textbf{x}_t = \Phi_p(\textbf{z}_t)$  $(t = 0,1,...,T)$. This is then compared against the actually obtained measurements to minimize the prediction error, which effectuates the training of the proposed model. In what follows, we offer the details of the formulation of the three outlined components (encoder, Pi-Neural ODEs, and decoder) to the suggested framework.
 
 ## Results
-![prediction](https://s3.amazonaws.com/comet.ml/image_6de8c0b6a5064fd3a863bb24a99c4960-QznS3qPanqWxer6BHVsrxE9Zc.svg)
+![prediction](https://s3.amazonaws.com/comet.ml/image_f53bb1b77815441384809c32aecc2570-czLSF9566pdYmEeLsn21PKntA.svg)
 
 The corresponding predictions of displacements, velocities and accelerations are shown in the above figure, denoted by the blue lines. This prediction is compared with the actual measurements in grey color and predictions by the FEM models in red color. One can see that the FEM model offers satisfactory results, while some channel predictions are out of phase and fail to accurately follow the actual measurement, most possibly due to the inaccurate modeling of damping. The prediction from the proposed hybrid model is evidently more accurate than the FEM model, almost aligning with the actual measurements.
 
