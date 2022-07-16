@@ -1,4 +1,3 @@
-from comet_ml import Experiment
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -11,7 +10,9 @@ from torchdiffeq import odeint
 from models import RecognitionRNN, MLP
 from torch.distributions.multivariate_normal import MultivariateNormal
 from tqdm import tqdm
-    
+from matplotlib.lines import Line2D
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
+
 def loading_modal_paras(modal_dir, n_modes_used = 4):
     
     npzfile = np.load(modal_dir)
@@ -70,6 +71,8 @@ def plot_resp(z_1, z_2, obs_idx, z_fem = None,
               label_fem = "FEM",
               col_num = 4):
     plt.ioff()
+    plt.rc('font', family='Times New Roman')
+    plt.rcParams["mathtext.fontset"] = "cm"
     n_fig = z_1.shape[-1]
     Y_label1 = [r"$x_{"+str(i+1)+"}$" for i in range (n_fig//3)]
     Y_label2 = [r"$\dot{x}_{"+str(i+1)+"}$" for i in range (n_fig//3)]
@@ -77,25 +80,43 @@ def plot_resp(z_1, z_2, obs_idx, z_fem = None,
     
     Y_labels = Y_label1 + Y_label2 + Y_label3
     
-    fig = plt.figure(figsize = (14,6) )   
+    fig = plt.figure(figsize = (140,75) )   
     for i in range(n_fig):
         plt.subplot( (n_fig+1)//col_num, (n_fig+1) // ((n_fig+1) // col_num), i+1) 
 
         if i in obs_idx:
-            plt.plot(z_2[:,i], '-', color = "silver", label = label2, lw = 2.5)
+            plt.plot(z_2[:,i], '-', color = "silver", label = label2, lw = 30)
         else:
-            plt.plot(z_2[:,i], "--", color = 'silver',label = label3, lw = 2.5)   
+            plt.plot(z_2[:,i], "--", color = 'silver',label = label3, lw = 30)   
             
-        plt.plot(z_1[:,i], '-', color = "blue", lw = 1, label = label1) 
+        plt.plot(z_1[:,i], '-', color = "blue", lw = 10, label = label1) 
         if z_fem is not None:
-            plt.plot(z_fem[:,i], '-', color = "indianred", lw = 1, label = label_fem)
+            plt.plot(z_fem[:,i], '-', color = "indianred", lw = 10, label = label_fem)
         
-        plt.ylabel(Y_labels[i])
+        plt.ylabel(Y_labels[i], fontsize=200)
         
-        if i == obs_idx[0] or i == 0:
-            plt.legend(loc = 1, ncol=3)
-    plt.xlabel("$k$")
-    plt.tight_layout()
+#        if i == 0:
+#            lines = [Line2D([0], [0], color="silver", linewidth=20, linestyle='--'),
+#                     Line2D([0], [0], color="silver", linewidth=20, linestyle='-'),
+#                     Line2D([0], [0], color="indianred", linewidth=20, linestyle='-'),
+#                     Line2D([0], [0], color="blue", linewidth=20, linestyle='-')]
+#            labels = ['unmeasured data', 'measured data', 'FEM', 'hybrid model']
+#            plt.legend(lines, labels, loc="lower left", bbox_to_anchor= (0.0, 1.01), ncol=1, fontsize=120)
+            #plt.legend(loc="lower left", bbox_to_anchor= (0.0, 1.01), ncol=2, fontsize=120)
+        
+        if i in range(8,12):
+            plt.xlabel("$k$", fontsize=200)
+        else:
+            plt.xticks([])
+        plt.xticks(fontsize=200)
+        plt.yticks(fontsize=200)
+    lines = [Line2D([0], [0], color="silver", linewidth=20, linestyle='--'),
+    Line2D([0], [0], color="silver", linewidth=20, linestyle='-'),
+    Line2D([0], [0], color="indianred", linewidth=20, linestyle='-'),
+    Line2D([0], [0], color="blue", linewidth=20, linestyle='-')]
+    labels = ['unmeasured data', 'measured data', 'FEM', 'hybrid model']
+    fig.legend(lines, labels, loc='upper left', bbox_to_anchor=(0,1), ncol=4, fontsize=180)
+    plt.tight_layout(rect=[0,0,1,0.9])
     return fig
 
 def plot_latent(z_1, 
@@ -246,8 +267,6 @@ def compute_loss(odefunc_model, zq0, ts, data_train,
     analytic_kl = normal_kl(zq0_mean, zq0_logvar,
                             pz0_mean, pz0_logvar).sum(-1)
     loss = torch.mean(-logpx + analytic_kl, dim=0)
-
-    experiment.log_metric("loss", loss, step=global_step)
     
     return loss, pred_x, pred_state, pred_zq_sol 
 
@@ -273,11 +292,6 @@ def load_checkpoint(load_path):
 
 if __name__ == '__main__': 
     
-    experiment = Experiment(
-                api_key="xc4Txf2ZWPNveg4veZsy5Hxzt",
-                project_name="Neural_Modal_ODE_demo",
-                workspace="gamehere-007",
-                )
     
     n_modes_used = 4
     n_dim = n_modes_used
@@ -301,11 +315,10 @@ if __name__ == '__main__':
         "obs_idx": obs_idx, 
         "encoder_type": encoder_type
     }  
-     
-    experiment.log_parameters(hyper_params)    
+       
         
     modal_dir =   "./data/modal_para.npz"
-    data_dir =   "./data/measured_data.npz" 
+    data_dir =   "./data/measured_data_kn_0.5.npz" 
       
     p, node_corr, edges = loading_modal_paras(modal_dir, n_modes_used = n_modes_used)
     
@@ -346,7 +359,7 @@ if __name__ == '__main__':
     save_path = os.path.join(train_model_dir, dt_string)
     Path(save_path).mkdir(parents=True, exist_ok=True)  
     
-    load_model = ""
+    load_model = "31-05-2022_05-51-49_kn_1"
 
     if  load_model != "":       
         load_path =  os.path.join(train_model_dir, load_model,'checkpoint.pth')
@@ -362,72 +375,71 @@ if __name__ == '__main__':
     train_loader = torch.utils.data.DataLoader(train_set,
                                             batch_size= batch_size,
                                             shuffle=True)      
-        
-    with experiment.train():  
-        for epoch in range(num_epochs):
-            for _, (data_train, state_full) in enumerate(tqdm(train_loader)):
+    
+
+    for epoch in range(num_epochs):
+        for _, (data_train, state_full) in enumerate(tqdm(train_loader)):
+    
+            global_step += 1            
+            optimizer.zero_grad()
+                
+            # estimate zq0
+            zq0, zq0_mean, zq0_logvar = sampling_zq0(odefunc,rec,data_train)
+
+            loss, pred_x, pred_state, pred_zq_sol  = compute_loss(
+                odefunc, zq0, ts, data_train, 
+                obs_idx, obs_noise_std = obs_noise_std)
+
+            loss.backward()
+            optimizer.step()       
+
+            # recording loss
+            batch_loss = loss / batch_size
+            #print(f"Iteration: {global_step} \t Loss: {batch_loss.item():.4f}")
+
+        if  epoch % 100 == 0 :
+
+            save_checkpoint(odefunc, rec, optimizer, epoch, loss, save_path)
+            print('Epoch: {}, loss_train: {:.4f}'.format(epoch, batch_loss)) 
+            n_re = 0
+            #-----------plotting train -----------------#                             
+            fig0 = plot_resp(
+                pred_state.detach().numpy()[n_re,:,:], 
+                state_full.detach().numpy()[n_re,:,:], 
+                obs_idx
+                )
+            fig0.savefig("fig/train_full_{:02d}".format(epoch))
             
-                global_step += 1            
-                optimizer.zero_grad()
-                
-                # estimate zq0
-                zq0, zq0_mean, zq0_logvar = sampling_zq0(odefunc,rec,data_train)
-                
-                loss, pred_x, pred_state, pred_zq_sol  = compute_loss(
-                                                        odefunc, zq0, ts, data_train, 
-                                                        obs_idx, obs_noise_std = obs_noise_std)
-                
-                loss.backward()
-                optimizer.step()       
-                
-                # recording loss
-                batch_loss = loss / batch_size
-                experiment.log_metric("training_loss", batch_loss, step=global_step)                    
+            fig1 = plot_latent(
+                pred_zq_sol.detach().numpy()[n_re,:,:], 
+                )
+            fig1.savefig("fig/train_latent_{:02d}".format(epoch))
 
-            if  epoch % 10 == 0 :
-                
-                save_checkpoint(odefunc, rec, optimizer, epoch, loss, save_path)
-                print('Iter: {}, loss_train: {:.4f}'.format(epoch, batch_loss)) 
-                n_re = 0
-                #-----------plotting train -----------------#                             
-                fig0 = plot_resp(
-                          pred_state.detach().numpy()[n_re,:,:], 
-                          state_full.detach().numpy()[n_re,:,:], 
-                          obs_idx
-                          )
-                experiment.log_figure(figure=fig0, figure_name="train_full_{:02d}".format(epoch)) 
-                
-                fig1 = plot_latent(
-                          pred_zq_sol.detach().numpy()[n_re,:,:], 
-                          )
-                experiment.log_figure(figure=fig1, figure_name="train_latent_{:02d}".format(epoch)) 
-                
-                #-----------plotting test -----------------#
-                n_sample = 16
-                
-                Obs_trajs_sample = Obs_trajs_test[:n_sample,:,:]
-                
-                zq0, zq0_mean, zq0_logvar = sampling_zq0(odefunc,rec,Obs_trajs_sample)
-                
-                loss_test, pred_x_test, pred_state_test, pred_zq_sol_test = compute_loss(
-                                    odefunc, zq0, ts, Obs_trajs_sample, 
-                                    obs_idx, obs_noise_std = obs_noise_std) 
-                
-                print('Iter: {}, loss_test: {:.4f}'.format(epoch, loss_test/n_sample)) 
-                experiment.log_metric("test_loss", loss_test/n_sample, step = global_step)   
+            #-----------plotting test -----------------#
+            n_sample = 16
 
-                fig2= plot_resp(
-                               pred_state_test.detach().numpy()[n_re,:,:], 
-                               State_trajs_test.detach().numpy()[n_re,:,:], 
-                               obs_idx,
-                               z_fem = State_trajs_fem_test[n_re,:,:], 
-                              )
-                experiment.log_figure(figure=fig2, figure_name="test_full_{:02d}".format(epoch)) 
-                                
-                fig3 = plot_latent(
-                          pred_zq_sol_test.detach().numpy()[n_re,:,:]
-                          )
-                experiment.log_figure(figure=fig3, figure_name="test_latent_{:02d}".format(epoch)) 
-                                                           
-                plt.close("all")     
+            Obs_trajs_sample = Obs_trajs_test[:n_sample,:,:]
+
+            zq0, zq0_mean, zq0_logvar = sampling_zq0(odefunc,rec,Obs_trajs_sample)
+
+            loss_test, pred_x_test, pred_state_test, pred_zq_sol_test = compute_loss(
+                odefunc, zq0, ts, Obs_trajs_sample, 
+                obs_idx, obs_noise_std = obs_noise_std) 
+
+            print('Epoch: {}, loss_test: {:.4f}'.format(epoch, loss_test/n_sample)) 
+
+            fig2= plot_resp(
+                pred_state_test.detach().numpy()[n_re,:,:], 
+                State_trajs_test.detach().numpy()[n_re,:,:], 
+                obs_idx,
+                z_fem = State_trajs_fem_test[n_re,:,:], 
+                )
+            fig2.savefig("fig/test_full_{:02d}".format(epoch))
+
+            fig3 = plot_latent(
+                pred_zq_sol_test.detach().numpy()[n_re,:,:]
+                )
+            fig3.savefig("fig/test_latent_{:02d}".format(epoch))
+
+            plt.close("all")     
                              
