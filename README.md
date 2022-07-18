@@ -1,6 +1,6 @@
-# Neural-Modal-ODE-Demo
+# Neural Modal ODEs
 
-This repository contains demo codes and data for the following working paper:
+This repository contains codes for impelementing a demonstrative example in the following paper:
 
 * "Integrating Physics-based Modeling with Neural ODEs for Modeling High Dimensional Monitored Structures."
 Zhilu Lai, Wei Liu, Xudong Jian, Kiran Bacsa, Limin Sun, and Eleni Chatzi (2022). 
