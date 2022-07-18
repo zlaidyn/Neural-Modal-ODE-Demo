@@ -1,3 +1,11 @@
+# =============================================================================
+# This is a Pytorch implementation of Neural Modal ODEs
+# A demonstraive example of a 4-DOF linear/Nonlinear Structural Dynamical Systems
+# Code Authors: Zhilu Lai, Liu Wei, Kiran Bacsa @ ETH and Singapore-ETH Centre
+# =============================================================================
+
+
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -299,26 +307,16 @@ if __name__ == '__main__':
     rnn_len = 10
     obs_noise_std = 0.03
     batch_size = 16
-    num_epochs = 1000
+    num_epochs = 100
     lr = 1e-3
     encoder_type = "RNN_MLP" #  two types： "RNN" and "RNN_MLP"
     
     print("encoder_tyep = " + encoder_type)
     
-    obs_idx = [3,8,10,11] # dis - 0,1,2,3; vel - 4,5,6,7; acc - 8,9,10,11 
-    
-    hyper_params = {
-        "batch_size": batch_size,
-        "num_epochs": num_epochs,
-        "rnn_len": rnn_len,
-        "lr": lr,
-        "obs_idx": obs_idx, 
-        "encoder_type": encoder_type
-    }  
-       
+    obs_idx = [3,8,10,11] # dis - 0,1,2,3; vel - 4,5,6,7; acc - 8,9,10,11        
         
     modal_dir =   "./data/modal_para.npz"
-    data_dir =   "./data/measured_data_kn_0.5.npz" 
+    data_dir =   "./data/measured_data_kn_0.5.npz" # kn = 0, 0.5, or 1 for different levels of nonlinearity
       
     p, node_corr, edges = loading_modal_paras(modal_dir, n_modes_used = n_modes_used)
     
@@ -359,7 +357,8 @@ if __name__ == '__main__':
     save_path = os.path.join(train_model_dir, dt_string)
     Path(save_path).mkdir(parents=True, exist_ok=True)  
     
-    load_model = "31-05-2022_05-51-49_kn_1"
+    # load_model = "31-05-2022_05-51-49_kn_1"  # load pre-trained models
+    load_model = ""
 
     if  load_model != "":       
         load_path =  os.path.join(train_model_dir, load_model,'checkpoint.pth')
@@ -397,7 +396,7 @@ if __name__ == '__main__':
             batch_loss = loss / batch_size
             #print(f"Iteration: {global_step} \t Loss: {batch_loss.item():.4f}")
 
-        if  epoch % 100 == 0 :
+        if  epoch % 10 == 0 :
 
             save_checkpoint(odefunc, rec, optimizer, epoch, loss, save_path)
             print('Epoch: {}, loss_train: {:.4f}'.format(epoch, batch_loss)) 
