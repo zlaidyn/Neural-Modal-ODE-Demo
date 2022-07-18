@@ -22,9 +22,12 @@ The architecture is comprised of:
      
 
 ## Repository Overview
- * `data` - Generated data from the simulated system
-   * `modal_para.npz` - Modal parameters for the simulated system.
-   * `measured_data_nonlinear.npz` - Generated measurements.
- * `Neural_Modal_ODE_demo.py` - Manages training and evaluation of models.
- * `data_generation.py` - Generates data from a simulated 4-DOF nonlinear system.
- * `models.py` - PyTorch modules for the encoder.
+* `Neural_Modal_ODE_demo.py` - main function, managing model training and testing.
+* `data_generation.py` - function for generating data set from a simulated 4-DOF nonlinear system.
+* `models.py` - PyTorch modules for the encoder.
+
+* `data` - Generated data set from a simulated dynamical system. 
+* `modal_para.npz` - Modal parameters of the simulated system.
+* `measured_data_nonlinear.npz` - Generated observational data.
+ 
+
