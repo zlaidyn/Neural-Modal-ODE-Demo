@@ -4,7 +4,7 @@ This repository contains a PyTorch impelementation of a demonstrative example in
 
 * "Integrating Physics-based Modeling with Neural ODEs for Modeling High Dimensional Monitored Structures."
 Zhilu Lai, Wei Liu, Xudong Jian, Kiran Bacsa, Limin Sun, and Eleni Chatzi (2022). 
-In the scope of physics-informed machine learning, this paper proposes a framework for integrating physics-based modeling with deep learning (particularly, Neural Ordinary Differential Equations -- Neural ODEs) for modeling the dynamics of monitored and high-dimensional engineered systems.
+
 
 ## Framework
 ![framework](framework.png)
