@@ -7,10 +7,14 @@ Zhilu Lai, Wei Liu, Xudong Jian, Kiran Bacsa, Limin Sun, and Eleni Chatzi (2022)
 
 
 ## Framework
-![framework](framework.png)
+![Graphical abstract of the framework](framework.png)
 
-We summarize the proposed architecture in the above flowchart, which concatenates an encoder $\Psi_{\text{NN}}$ and a decoder $\Phi_p$, with  Physics-informed Neural ODEs (Pi-Neural ODEs).
-The role of the encoder is to perform inference from observational data of a handful of DOFs to the initial conditions of latent variables $\textbf{z}_0$.
+The architecture concatenates:
+
+* an encoder $\Psi_{\text{NN}}$ (performing inference from observational data of a handful of data to the initial conditions of latent variables $\textbf{z}_0$)
+* Physics-informed Neural ODEs (Pi-Neural ODEs)
+* a decoder $\Phi_p$
+The role of the encoder is to .
 The evolution of the dynamics initiating from $\textbf{z}_0$ is learned and modeled by means of Physics-informed Neural ODEs, where the physics-informed term adopts a modal representation derived from the physics-based model. 
 The prediction of $\textbf{z}_0, \textbf{z}_1, ... ,\textbf{z}_t, ... ,  \textbf{z}_T$ at time step $t_0, t_1, ... ,t, ... ,  t_T$,  obtained from the previous step is mapped back to the original observations space via the decoder $\textbf{x}_t = \Phi_p(\textbf{z}_t)$  $(t = 0,1,...,T)$. This is then compared against the actually obtained measurements to minimize the prediction error, which effectuates the training of the proposed model. In what follows, we offer the details of the formulation of the three outlined components (encoder, Pi-Neural ODEs, and decoder) to the suggested framework.
 
