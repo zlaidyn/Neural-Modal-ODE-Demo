@@ -396,7 +396,7 @@ if __name__ == '__main__':
             batch_loss = loss / batch_size
             #print(f"Iteration: {global_step} \t Loss: {batch_loss.item():.4f}")
 
-        if  epoch % 10 == 0 :
+        if  epoch % 2 == 0 :
 
             save_checkpoint(odefunc, rec, optimizer, epoch, loss, save_path)
             print('Epoch: {}, loss_train: {:.4f}'.format(epoch, batch_loss)) 
