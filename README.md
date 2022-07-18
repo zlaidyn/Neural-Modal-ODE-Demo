@@ -26,8 +26,8 @@ The architecture is comprised of:
 * `data_generation.py` - function for generating data set from a simulated 4-DOF nonlinear system.
 * `models.py` - PyTorch modules for the encoder.
 
-* `data` - Generated data set from a simulated dynamical system. 
-* `modal_para.npz` - Modal parameters of the simulated system.
-* `measured_data_nonlinear.npz` - Generated observational data.
+* `data` - generated data set from a simulated dynamical system. 
+* `modal_para.npz` - modal parameters of the simulated system.
+* `measured_data_nonlinear.npz` - generated observational data.
  
 
