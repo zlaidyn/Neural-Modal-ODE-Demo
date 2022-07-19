@@ -1,10 +1,13 @@
 # =============================================================================
 # This is a Pytorch implementation of Neural Modal ODEs
-# A demonstraive example of a 4-DOF linear/Nonlinear Structural Dynamical Systems
+# A demonstraive example of a 4-DOF linear/nonlinear Structural Dynamical Systems
+#
 # Code Authors: Zhilu Lai, Liu Wei, Kiran Bacsa @ ETH and Singapore-ETH Centre
+# Reference: "Integrating Physics-based Modeling with Neural ODEs for 
+#             Modeling High Dimensional Monitored Structures." 
+#             Zhilu Lai, Wei Liu, Xudong Jian, Kiran Bacsa, 
+#             Limin Sun, and Eleni Chatzi (2022)
 # =============================================================================
-
-
 
 import torch
 import torch.nn as nn
@@ -103,26 +106,24 @@ def plot_resp(z_1, z_2, obs_idx, z_fem = None,
         
         plt.ylabel(Y_labels[i], fontsize=200)
         
-#        if i == 0:
-#            lines = [Line2D([0], [0], color="silver", linewidth=20, linestyle='--'),
-#                     Line2D([0], [0], color="silver", linewidth=20, linestyle='-'),
-#                     Line2D([0], [0], color="indianred", linewidth=20, linestyle='-'),
-#                     Line2D([0], [0], color="blue", linewidth=20, linestyle='-')]
-#            labels = ['unmeasured data', 'measured data', 'FEM', 'hybrid model']
-#            plt.legend(lines, labels, loc="lower left", bbox_to_anchor= (0.0, 1.01), ncol=1, fontsize=120)
-            #plt.legend(loc="lower left", bbox_to_anchor= (0.0, 1.01), ncol=2, fontsize=120)
-        
         if i in range(8,12):
             plt.xlabel("$k$", fontsize=200)
         else:
             plt.xticks([])
         plt.xticks(fontsize=200)
         plt.yticks(fontsize=200)
-    lines = [Line2D([0], [0], color="silver", linewidth=20, linestyle='--'),
-    Line2D([0], [0], color="silver", linewidth=20, linestyle='-'),
-    Line2D([0], [0], color="indianred", linewidth=20, linestyle='-'),
-    Line2D([0], [0], color="blue", linewidth=20, linestyle='-')]
-    labels = ['unmeasured data', 'measured data', 'FEM', 'hybrid model']
+
+    if z_fem is not None:
+        lines = [Line2D([0], [0], color="silver", linewidth=20, linestyle='--'),
+                 Line2D([0], [0], color="silver", linewidth=20, linestyle='-'),
+                 Line2D([0], [0], color="indianred", linewidth=20, linestyle='-'),
+                 Line2D([0], [0], color="blue", linewidth=20, linestyle='-')]
+        labels = ['unmeasured data', 'measured data', 'FEM', 'hybrid model']
+    else:
+        lines = [Line2D([0], [0], color="silver", linewidth=20, linestyle='--'),
+                 Line2D([0], [0], color="silver", linewidth=20, linestyle='-'),
+                 Line2D([0], [0], color="blue", linewidth=20, linestyle='-')]
+        labels = ['unmeasured data', 'measured data', 'hybrid model']
     fig.legend(lines, labels, loc='upper left', bbox_to_anchor=(0,1), ncol=4, fontsize=180)
     plt.tight_layout(rect=[0,0,1,0.9])
     return fig
@@ -146,7 +147,6 @@ def plot_latent(z_1,
         plt.ylabel(Y_labels[i])
         if i == 0:
             plt.legend()
-    # plt.xlabel("$k$") 
     plt.tight_layout()
     return fig
  
@@ -307,7 +307,7 @@ if __name__ == '__main__':
     rnn_len = 10
     obs_noise_std = 0.03
     batch_size = 16
-    num_epochs = 100
+    num_epochs = 200
     lr = 1e-3
     encoder_type = "RNN_MLP" #  two types： "RNN" and "RNN_MLP"
     
@@ -394,9 +394,8 @@ if __name__ == '__main__':
 
             # recording loss
             batch_loss = loss / batch_size
-            #print(f"Iteration: {global_step} \t Loss: {batch_loss.item():.4f}")
 
-        if  epoch % 2 == 0 :
+        if  epoch % 5 == 0 :
 
             save_checkpoint(odefunc, rec, optimizer, epoch, loss, save_path)
             print('Epoch: {}, loss_train: {:.4f}'.format(epoch, batch_loss)) 

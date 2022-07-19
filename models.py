@@ -20,8 +20,6 @@ class MLP(nn.Module):
         return self.mlp(x)    
 
  
-    
-
 class RecognitionRNN(nn.Module):
 
     def __init__(self, out_dim = 4, obs_dim = 3, nhidden = 32):
