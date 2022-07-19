@@ -308,7 +308,7 @@ if __name__ == '__main__':
     rnn_len = 10
     obs_noise_std = 0.03
     batch_size = 16
-    num_epochs = 200
+    num_epochs = 300
     lr = 1e-3
     encoder_type = "RNN_MLP" #  two types： "RNN" and "RNN_MLP"
     
@@ -358,8 +358,9 @@ if __name__ == '__main__':
     save_path = os.path.join(train_model_dir, dt_string)
     Path(save_path).mkdir(parents=True, exist_ok=True)  
     
-    # load_model = "31-05-2022_05-51-49_kn_1"  # load pre-trained models
-    load_model = ""
+    # we load a pre-trained model for demonstration
+    # or simply set load_model = "" to train a model (which takes a longer time)
+    load_model = "30-05-2022_05-30-53_kn_05" 
 
     if  load_model != "":       
         load_path =  os.path.join(train_model_dir, load_model,'checkpoint.pth')
