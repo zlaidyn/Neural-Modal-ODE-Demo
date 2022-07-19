@@ -11,7 +11,7 @@ Zhilu Lai, Wei Liu, Xudong Jian, Kiran Bacsa, Limin Sun, and Eleni Chatzi (2022)
 The architecture of Neural Modal ODEs is comprised of:
 
 * an encoder $\Psi_{\text{NN}}$: performing inference from a handful observational data to the initial conditions of latent quantities $\textbf{z}_0$
-* Physics-informed Neural ODEs (Pi-Neural ODEs): modeling the dynamics of latent quantities structured by (a modal representation + a learning term) 
+* Physics-informed Neural ODEs (Pi-Neural ODEs): modeling the dynamics of latent quantities structured by a modal representation added by a learning term
 * a decoder $\Phi_p$: emitting the latent quantities to the full-field observational space, enforced by the eigenmodes derived from eigen-analysis of the structural matrices of the (or linearized) physics-based models
 
 ![Graphical abstract of the framework](framework.png)
