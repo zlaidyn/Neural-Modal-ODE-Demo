@@ -7,6 +7,7 @@
 #             Modeling High Dimensional Monitored Structures." 
 #             Zhilu Lai, Wei Liu, Xudong Jian, Kiran Bacsa, 
 #             Limin Sun, and Eleni Chatzi (2022)
+#             https://arxiv.org/abs/2207.07883
 # =============================================================================
 
 import torch
@@ -160,7 +161,7 @@ class NeuralModalODEfunc(nn.Module):
         self.n = hidden_ndof
             
         if p != ():
-            print("modal-informed")
+            print("physics-informed type: modal-informed")
             Omega, Xi, Phi = p
             
             Phi_dim = Phi.shape[0]
