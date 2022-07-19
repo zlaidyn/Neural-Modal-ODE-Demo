@@ -19,7 +19,7 @@ The architecture of Neural Modal ODEs is comprised of:
 
 ## Results
 
-In this 4-DOF linear/nonlinear Structural Dynamical System, we only measure $\ddot{x}_1$, $\ddot{x}_3$, $\ddot{x}_4$, and $x_4$: 
+In this 4-DOF nonlinear Structural Dynamical System, we only measure $\ddot{x}_1$, $\ddot{x}_3$, $\ddot{x}_4$, and $x_4$: 
 
 * The full-field responses are successfully reconstructed via Neural Modal ODEs. 
 
