@@ -23,7 +23,7 @@ In this 4-DOF linear/nonlinear Structural Dynamical System, we only measure $\dd
 
 * The full-field responses are successfully reconstructed via Neural Modal ODEs. 
 
-* "FEM" in the figure, means the purely physics-based models, where we intentionally introduce model noise into the model. We integrate this "inaccurate" model with observational data via Neural Model ODEs, forming a hybrid model -- the discrepancy term $\text{NN}(\textbf{z})$ is capbale of rectifying the model inaccuracy.    
+* "FEM" in the figure, means the purely physics-based model, where we intentionally introduce model noise into the model. We integrate this "inaccurate" model with observational data via Neural Model ODEs, forming a hybrid model -- the discrepancy term $\text{NN}(\textbf{z})$ is capbale of rectifying the model inaccuracy.    
 
 ![prediction](fig/kn_0.5.png)
      
