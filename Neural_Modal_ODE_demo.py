@@ -23,6 +23,8 @@ from models import RecognitionRNN, MLP
 from torch.distributions.multivariate_normal import MultivariateNormal
 from tqdm import tqdm
 from matplotlib.lines import Line2D
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 def loading_modal_paras(modal_dir, n_modes_used = 4):
@@ -317,7 +319,7 @@ if __name__ == '__main__':
     obs_idx = [3,8,10,11] # dis - 0,1,2,3; vel - 4,5,6,7; acc - 8,9,10,11        
         
     modal_dir =   "./data/modal_para.npz"
-    data_dir =   "./data/measured_data_kn_0.5.npz" # kn = 0, 0.5, or 1 for different levels of nonlinearity
+    data_dir =   "./data/measured_data_kn_0.0.npz" # kn = 0, 0.5, or 1 for different levels of nonlinearity
       
     p, node_corr, edges = loading_modal_paras(modal_dir, n_modes_used = n_modes_used)
     
@@ -360,7 +362,7 @@ if __name__ == '__main__':
     
     # we load a pre-trained model for demonstration
     # or simply set load_model = "" to train a model (which takes a longer time)
-    load_model = "30-05-2022_05-30-53_kn_05" 
+    load_model = "30-05-2022_05-29-24_kn_0" 
 
     if  load_model != "":       
         load_path =  os.path.join(train_model_dir, load_model,'checkpoint.pth')
@@ -426,7 +428,7 @@ if __name__ == '__main__':
                 odefunc, zq0, ts, Obs_trajs_sample, 
                 obs_idx, obs_noise_std = obs_noise_std) 
 
-            print('Epoch: {}, loss_test: {:.4f}'.format(epoch, loss_test/n_sample)) 
+            print('Epoch: {}, loss_test: {:.4f}'.format(epoch, loss_test/n_sample))
 
             fig2= plot_resp(
                 pred_state_test.detach().numpy()[n_re,:,:], 
@@ -441,5 +443,30 @@ if __name__ == '__main__':
                 )
             fig3.savefig("fig/test_latent_{:02d}".format(epoch))
 
-            plt.close("all")     
-                             
+            plt.close("all")
+            
+            error = 0
+            R2 = 0
+            for i in range(12):
+                error += np.sqrt(mean_squared_error(pred_state_test.detach().numpy()[n_re,:,i], State_trajs_test.detach().numpy()[n_re,:,i]))/(max(State_trajs_test.detach().numpy()[n_re,:,i])-min(State_trajs_test.detach().numpy()[n_re,:,i]))
+                reg = LinearRegression(fit_intercept=True)
+                res = reg.fit(State_trajs_test.detach().numpy()[n_re,:,i].reshape(-1,1), pred_state_test.detach().numpy()[n_re,:,i])
+                R2 += reg.score(State_trajs_test.detach().numpy()[n_re,:,i].reshape(-1,1), pred_state_test.detach().numpy()[n_re,:,i])
+            error /= 12
+            R2 /= 12
+            #error *= 100
+            print('Epoch: {}, RMSE_test: {:.4f}'.format(epoch, error)) 
+            print('Epoch: {}, R2_test: {:.4f}'.format(epoch, R2))
+            
+            error_fem = 0
+            R2_fem = 0
+            for i in range(12):
+                error_fem += np.sqrt(mean_squared_error(State_trajs_fem_test[n_re,:,i], State_trajs_test.detach().numpy()[n_re,:,i]))/(max(State_trajs_test.detach().numpy()[n_re,:,i])-min(State_trajs_test.detach().numpy()[n_re,:,i]))
+                reg_fem = LinearRegression(fit_intercept=True)
+                res_fem = reg_fem.fit(State_trajs_test.detach().numpy()[n_re,:,i].reshape(-1,1), State_trajs_fem_test[n_re,:,i])
+                R2_fem += reg_fem.score(State_trajs_test.detach().numpy()[n_re,:,i].reshape(-1,1), State_trajs_fem_test[n_re,:,i])
+            error_fem /= 12
+            R2_fem /= 12
+            #error *= 100
+            print('Epoch: {}, RMSE_fem_test: {:.4f}'.format(epoch, error_fem)) 
+            print('Epoch: {}, R2_fem_test: {:.4f}'.format(epoch, R2_fem)) 
