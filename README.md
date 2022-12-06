@@ -2,9 +2,7 @@
 
 This repository contains a PyTorch implementation of a demonstrative example in the following paper:
 
-* "Neural Modal ODEs: Integrating Physics-based Modeling with Neural ODEs for Modeling High Dimensional Monitored Structures"
-Zhilu Lai, Wei Liu, Xudong Jian, Kiran Bacsa, Limin Sun, and Eleni Chatzi (2022). [[arxiv link]](https://arxiv.org/abs/2207.07883)
-
+* Zhilu Lai, Wei Liu, Xudong Jian, Kiran Bacsa, Limin Sun, and Eleni Chatzi. [Neural modal ordinary differential equations: Integrating physics-based modeling with neural ordinary differential equations for modeling high-dimensional monitored structures](https://doi.org/10.1017/dce.2022.35). Data-Centric Engineering, Volume 3, 2022, e34.
 
 ## Framework
 
