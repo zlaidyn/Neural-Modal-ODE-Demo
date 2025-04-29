@@ -27,12 +27,11 @@ In this 4-DOF nonlinear Structural Dynamical System, we only measure $\ddot{x}_1
      
 
 ## Repository Overview
+* `bridge_example` - implementation on the bridge example.
+* `data` - generated datasets of the simulated 4-DOF nonlinear system.
+* `fem_matlab` - data generation for the bridge example.
 * `Neural_Modal_ODE_demo.py` - main function, managing model training and testing.
-* `data_generation.py` - function for generating data set from a simulated 4-DOF nonlinear system.
+* `data_generation.py` - function for generating datasets from the simulated 4-DOF nonlinear system.
 * `models.py` - PyTorch modules for the encoder.
 
-* `data` - generated data set from a simulated dynamical system. 
-* `modal_para.npz` - modal parameters of the simulated system.
-* `measured_data_nonlinear.npz` - generated observational data.
- 
 
